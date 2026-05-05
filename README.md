@@ -12,6 +12,12 @@ Open `http://localhost:8080`.
 
 The app has no package dependencies. It uses Node's built-in HTTP stack and a small WebSocket implementation in `server.js`. Three.js loads from a CDN for rich 3D rendering; if it is unavailable, the games fall back to a canvas renderer so the platform remains playable.
 
+## Live Deployment
+
+Current public URL: `http://blorox.50.116.38.29.sslip.io`
+
+The deployed service is proxied by nginx to the same Node/WebSocket process, so multiplayer rooms use the same origin as the web app.
+
 ## Built-In Games
 
 - **Party Cards: After Hours**: UI-based social card game with judge rotation, bots, and room sync.
