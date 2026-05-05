@@ -16,6 +16,7 @@
     chat: [],
     keys: {},
     cleanup: null,
+    chatHook: null,
     studio: {
       title: "My Blorox World",
       genre: "Sandbox",
@@ -34,6 +35,7 @@
     rogue: null
   };
   let activeStudioRenderer = null;
+  let audioContext = null;
 
   const routes = {
     discover: ["Discover", "Play built-ins, join rooms, and launch creator games."],
@@ -219,6 +221,7 @@
       state.cleanup();
       state.cleanup = null;
     }
+    state.chatHook = null;
 
     const route = currentRoute();
     const [title, subtitle] = route === "game"
@@ -646,6 +649,7 @@
       const text = input.value.trim();
       if (!text) return;
       sendWs({ type: "chat", text });
+      state.chatHook?.(text);
       input.value = "";
     });
     scrollChat();
@@ -882,6 +886,7 @@
 
   function submitCard(answer) {
     const cards = state.cards;
+    playTone(320, 0.08, "triangle");
     cards.selected = answer;
     cards.submissions = cards.submissions.filter((entry) => entry.player !== state.user.displayName);
     cards.submissions.push({ player: state.user.displayName, answer });
@@ -898,6 +903,7 @@
     const winner = state.cards.submissions[index];
     if (!winner) return;
     state.cards.scores[winner.player] = Number(state.cards.scores[winner.player] || 0) + 1;
+    playTone(720, 0.16, "sine");
     toast(`${winner.player} wins the round`);
     nextCardsRound();
   }
@@ -972,6 +978,7 @@
     if (distance(s.player, s.epstein) < 1.25) {
       s.caught = true;
       s.done = true;
+      playTone(90, 0.4, "sawtooth");
       s.dialogue = "Epstein caught you in the courtyard. Restart and use cover.";
     }
     if (s.minute >= 18 * 60) {
@@ -1043,6 +1050,7 @@
     if (item) {
       item.found = true;
       s.inventory.push(item.id);
+      playTone(560, 0.1, "triangle");
       s.dialogue = `Picked up ${item.name}.`;
       return;
     }
@@ -1068,6 +1076,7 @@
       if (ready) {
         s.flags.escaped = true;
         s.done = true;
+        playTone(880, 0.22, "sine");
         s.dialogue = "The flare burns green. The boat slips out before nightfall. You escaped.";
       } else {
         s.dialogue = "The boat needs route math, dock power, a launch key, and a flare.";
@@ -1174,12 +1183,14 @@
     const reward = { sneak: "intel", talk: "keys", distract: "supplies", rush: "depth" }[action];
     const roll = Math.floor(Math.random() * 100) + (action === "sneak" ? s.intel * 4 : 0) + (action === "talk" ? s.keys * 3 : 0);
     if (roll > risk) {
+      playTone(540, 0.11, "square");
       if (reward === "depth") s.depth += 2;
       else s[reward] += 1;
       s.depth += 1;
       s.heat = Math.max(0, s.heat - 4);
       s.log.push(`${state.user.displayName} used ${action} and advanced to sublevel ${s.depth}.`);
     } else {
+      playTone(140, 0.18, "sawtooth");
       s.heat += risk;
       s.resolve -= Math.round(risk / 2);
       s.log.push(`${state.user.displayName}'s ${action} went loud. Security heat rises.`);
@@ -1203,6 +1214,8 @@
   function mountCreatorGame(game, inline = false) {
     const mount = inline ? document.querySelector("#studioStage") : document.querySelector("#gameMount");
     if (!mount) return;
+    const scriptRuntime = parseCreatorScript(game.script || "");
+    const soundObjects = (game.scene?.objects || []).filter((object) => object.kind === "sound");
     mount.innerHTML = `
       <div class="game-layout">
         <aside class="game-hud">
@@ -1211,6 +1224,16 @@
             <div class="card-body">
               <p>${escapeHtml(game.description || "")}</p>
               <div class="dialogue script-box">${escapeHtml(game.script || "No script.")}</div>
+            </div>
+          </section>
+          <section class="band">
+            <div class="band-head"><h3>Runtime</h3><span class="pill">${scriptRuntime.hooks} hooks</span></div>
+            <div class="card-body">
+              <div class="dialogue" id="creatorRuntimeLog">${escapeHtml(scriptRuntime.start[0] || "Runtime ready.")}</div>
+              <div class="row">
+                ${scriptRuntime.touch.length ? `<button class="btn gold" id="triggerTouchScripts">Touch Scripts</button>` : ""}
+                ${soundObjects.map((object, index) => `<button class="btn ghost" data-play-sound="${index}">${escapeHtml(object.name || `Sound ${index + 1}`)}</button>`).join("")}
+              </div>
             </div>
           </section>
           <section class="band"><div class="card-body">${renderChat()}</div></section>
@@ -1224,6 +1247,29 @@
     renderer.setObjects(game.scene?.objects || []);
     renderer.setPlayer({ x: 0, z: 5 });
     bindChat();
+    const writeRuntime = (line) => {
+      const log = document.querySelector("#creatorRuntimeLog");
+      if (log) log.textContent = line;
+    };
+    document.querySelectorAll("[data-play-sound]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const index = Number(button.dataset.playSound);
+        const object = soundObjects[index];
+        playTone(260 + index * 120, 0.2, index % 2 ? "triangle" : "sine");
+        writeRuntime(`Played ${object?.name || "sound cue"}.`);
+      });
+    });
+    document.querySelector("#triggerTouchScripts")?.addEventListener("click", () => {
+      const line = scriptRuntime.touch[0] || "Touch script fired.";
+      playTone(640, 0.12, "square");
+      writeRuntime(line);
+    });
+    state.chatHook = (text) => {
+      const hit = scriptRuntime.chat.find((entry) => text.toLowerCase().includes(entry.trigger.toLowerCase()));
+      if (!hit) return;
+      playTone(480, 0.1, "triangle");
+      writeRuntime(hit.message);
+    };
     state.cleanup = () => renderer.dispose();
   }
 
@@ -1268,6 +1314,56 @@
     if (state.ws && state.ws.readyState === WebSocket.OPEN) {
       state.ws.send(JSON.stringify(message));
     }
+  }
+
+  function playTone(frequency = 440, duration = 0.12, type = "sine") {
+    try {
+      const AudioApi = window.AudioContext || window.webkitAudioContext;
+      if (!AudioApi) return;
+      audioContext ||= new AudioApi();
+      if (audioContext.state === "suspended") audioContext.resume();
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = type;
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + duration + 0.02);
+    } catch {
+      // Browsers can deny audio before a user gesture; gameplay continues silently.
+    }
+  }
+
+  function parseCreatorScript(script) {
+    const runtime = { start: [], chat: [], touch: [], hooks: 0 };
+    for (const rawLine of String(script || "").split("\n")) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      const start = line.match(/^onStart:\s*(.+)$/i);
+      const chat = line.match(/^onChat\s+([^:]+):\s*(.+)$/i);
+      const touch = line.match(/^onTouch\s+([^:]+):\s*(.+)$/i);
+      if (start) {
+        runtime.start.push(scriptMessage(start[1]));
+        runtime.hooks += 1;
+      } else if (chat) {
+        runtime.chat.push({ trigger: chat[1].trim(), message: scriptMessage(chat[2]) });
+        runtime.hooks += 1;
+      } else if (touch) {
+        runtime.touch.push(scriptMessage(touch[2]));
+        runtime.hooks += 1;
+      }
+    }
+    return runtime;
+  }
+
+  function scriptMessage(command) {
+    const quoted = String(command).match(/['"]([^'"]+)['"]/);
+    if (quoted) return quoted[1];
+    return String(command).replace(/^[a-z]+\(/i, "").replace(/\)$/, "").trim() || "Script fired.";
   }
 
   function applyStudioPatch(payload) {
