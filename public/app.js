@@ -13,10 +13,12 @@
     wsRoom: "",
     clientId: "",
     players: [],
+    remotePlayers: {},
     chat: [],
     keys: {},
     cleanup: null,
     chatHook: null,
+    playerHook: null,
     studio: {
       title: "My Blorox World",
       genre: "Sandbox",
@@ -26,7 +28,9 @@
       color: "#39d98a",
       objects: [
         { kind: "spawn", name: "Spawn", x: 0, y: 0, z: 0, color: "#39d98a" },
-        { kind: "block", name: "Starter platform", x: 0, y: -0.5, z: 0, color: "#5f6f86" }
+        { kind: "block", name: "Starter platform", x: 0, y: -0.5, z: 0, color: "#5f6f86" },
+        { kind: "coin", name: "coin", x: 2, y: 0.8, z: 0, color: "#f2b84b" },
+        { kind: "sound", name: "Chime", x: -2, y: 0.8, z: 1, color: "#c084fc" }
       ],
       script: "onStart: welcome('Build something impossible')\nonTouch coin: award(5)\nonChat dance: emote('spin')"
     },
@@ -222,6 +226,7 @@
       state.cleanup = null;
     }
     state.chatHook = null;
+    state.playerHook = null;
 
     const route = currentRoute();
     const [title, subtitle] = route === "game"
@@ -496,6 +501,8 @@
 
     document.querySelector("#playtestGame")?.addEventListener("click", () => {
       syncFields();
+      renderer.dispose();
+      if (activeStudioRenderer === renderer) activeStudioRenderer = null;
       mountCreatorGame({
         id: "playtest",
         title: state.studio.title,
@@ -1244,12 +1251,32 @@
       </div>
     `;
     const renderer = new SceneRenderer(document.querySelector("#creatorStage"), { theme: "creator" });
-    renderer.setObjects(game.scene?.objects || []);
-    renderer.setPlayer({ x: 0, z: 5 });
+    const baseObjects = game.scene?.objects || [];
+    const player = { x: 0, z: 5 };
+    const fired = new Set();
+    const renderCreatorScene = () => {
+      const remotes = Object.entries(state.remotePlayers)
+        .filter(([, remote]) => Number.isFinite(Number(remote.x)) && Number.isFinite(Number(remote.z)))
+        .map(([id, remote]) => ({
+          kind: "npc",
+          name: remote.name || id.slice(0, 8),
+          x: Number(remote.x),
+          y: 0,
+          z: Number(remote.z),
+          color: "#61dafb"
+        }));
+      renderer.setObjects([...baseObjects, ...remotes]);
+    };
+    renderCreatorScene();
+    renderer.setPlayer(player);
     bindChat();
     const writeRuntime = (line) => {
       const log = document.querySelector("#creatorRuntimeLog");
       if (log) log.textContent = line;
+    };
+    const fireTouch = (line, tone = 640) => {
+      playTone(tone, 0.12, "square");
+      writeRuntime(line);
     };
     document.querySelectorAll("[data-play-sound]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1260,9 +1287,7 @@
       });
     });
     document.querySelector("#triggerTouchScripts")?.addEventListener("click", () => {
-      const line = scriptRuntime.touch[0] || "Touch script fired.";
-      playTone(640, 0.12, "square");
-      writeRuntime(line);
+      fireTouch(scriptRuntime.touch[0]?.message || "Touch script fired.");
     });
     state.chatHook = (text) => {
       const hit = scriptRuntime.chat.find((entry) => text.toLowerCase().includes(entry.trigger.toLowerCase()));
@@ -1270,7 +1295,42 @@
       playTone(480, 0.1, "triangle");
       writeRuntime(hit.message);
     };
-    state.cleanup = () => renderer.dispose();
+    state.playerHook = renderCreatorScene;
+    const tick = () => {
+      const speed = state.keys.shift ? 0.2 : 0.12;
+      const before = `${player.x.toFixed(2)},${player.z.toFixed(2)}`;
+      if (state.keys.w || state.keys.arrowup) player.z -= speed;
+      if (state.keys.s || state.keys.arrowdown) player.z += speed;
+      if (state.keys.a || state.keys.arrowleft) player.x -= speed;
+      if (state.keys.d || state.keys.arrowright) player.x += speed;
+      player.x = clamp(player.x, -18, 18);
+      player.z = clamp(player.z, -18, 18);
+      renderer.setPlayer(player);
+      const after = `${player.x.toFixed(2)},${player.z.toFixed(2)}`;
+      if (after !== before) sendWs({ type: "player", payload: { x: player.x, z: player.z } });
+      for (const object of baseObjects) {
+        if (object.kind === "sound" && distance(player, object) < 1.7 && !fired.has(`sound:${object.name || object.x}:${object.z}`)) {
+          fired.add(`sound:${object.name || object.x}:${object.z}`);
+          playTone(360 + fired.size * 40, 0.16, "sine");
+          writeRuntime(`Heard ${object.name || "sound cue"}.`);
+        }
+        for (const touch of scriptRuntime.touch) {
+          const target = touch.target.toLowerCase();
+          const name = String(object.name || "").toLowerCase();
+          const kind = String(object.kind || "").toLowerCase();
+          const key = `touch:${touch.target}:${object.name || object.kind}:${object.x}:${object.z}`;
+          if ((target === kind || target === name) && distance(player, object) < 1.45 && !fired.has(key)) {
+            fired.add(key);
+            fireTouch(touch.message);
+          }
+        }
+      }
+    };
+    const interval = setInterval(tick, 60);
+    state.cleanup = () => {
+      clearInterval(interval);
+      renderer.dispose();
+    };
   }
 
   function connectRoom(room) {
@@ -1278,6 +1338,7 @@
     if (state.ws) state.ws.close();
     state.wsRoom = room;
     state.players = [];
+    state.remotePlayers = {};
     state.chat = [];
     const protocol = location.protocol === "https:" ? "wss" : "ws";
     const url = `${protocol}://${location.host}/ws?room=${encodeURIComponent(room)}&token=${encodeURIComponent(state.token)}`;
@@ -1303,6 +1364,9 @@
       } else if (message.type === "rogue-action") {
         state.rogue = message.payload;
         if (currentRoute() === "game" && location.hash.includes("builtin-xenu")) mountRogue();
+      } else if (message.type === "player") {
+        state.remotePlayers[message.senderId] = { name: message.name, ...(message.payload || {}) };
+        state.playerHook?.();
       }
       updatePresenceBits();
     });
@@ -1353,7 +1417,7 @@
         runtime.chat.push({ trigger: chat[1].trim(), message: scriptMessage(chat[2]) });
         runtime.hooks += 1;
       } else if (touch) {
-        runtime.touch.push(scriptMessage(touch[2]));
+        runtime.touch.push({ target: touch[1].trim(), message: scriptMessage(touch[2]) });
         runtime.hooks += 1;
       }
     }
