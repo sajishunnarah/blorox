@@ -480,6 +480,10 @@ textarea:focus {
   min-height: 380px;
 }
 
+.nightfall-stage {
+  min-height: 640px;
+}
+
 .overlay-top,
 .overlay-bottom {
   position: absolute;
@@ -633,6 +637,47 @@ textarea:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.nightfall-map {
+  position: relative;
+  height: 170px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at center, rgb(36 95 67 / 88%) 0 58%, rgb(16 47 58 / 88%) 59% 100%),
+    #102f3a;
+}
+
+.map-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--muted);
+  box-shadow: 0 0 0 2px rgb(13 15 19 / 70%);
+}
+
+.map-dot.player {
+  width: 12px;
+  height: 12px;
+  background: var(--cyan);
+}
+
+.map-dot.enemy {
+  width: 12px;
+  height: 12px;
+  background: var(--red);
+}
+
+.map-dot.npc {
+  background: var(--green);
+}
+
+.map-dot.item {
+  background: var(--gold);
 }
 
 .asset-swatch {
