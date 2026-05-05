@@ -1,0 +1,9 @@
+data/
+.smoke-data-*/
+AGENTS.md
+goal.md
+node_modules/
+.DS_Store
+*.log
+coverage/
+dist/
