@@ -102,6 +102,15 @@ await ensureThree();
     "Xenu chamber"
   ];
 
+  const rogueRoomKinds = [
+    ["reception", "social pressure"],
+    ["records", "locked evidence"],
+    ["camera hall", "sight lines"],
+    ["donation maze", "heat spike"],
+    ["legal office", "paper trap"],
+    ["elevator", "depth gate"]
+  ];
+
   document.addEventListener("keydown", (event) => {
     state.keys[event.key.toLowerCase()] = true;
   });
@@ -785,6 +794,8 @@ await ensureThree();
       selected: "",
       phase: "select",
       judge: "table",
+      targetScore: 5,
+      tableMood: sample(["feral", "deadpan", "cinematic", "petty"]),
       scores: Object.fromEntries([state.user.displayName, ...bots].map((name) => [name, 0])),
       bots
     };
@@ -802,11 +813,26 @@ await ensureThree();
     `).join("");
     mount.innerHTML = `
       <div class="card-table">
-        <div class="grid">
+        <div class="card-arena">
+          <div class="table-felt">
+            <div class="split">
+              <span class="pill gold">Round ${cards.round}</span>
+              <span class="pill">table mood: ${escapeHtml(cards.tableMood)}</span>
+              <span class="pill green">first to ${cards.targetScore}</span>
+            </div>
+            <div class="table-seats">
+              ${Object.entries(cards.scores).map(([name, score]) => `
+                <div class="seat-chip ${name === state.user.displayName ? "you" : ""}">
+                  <strong>${escapeHtml(name.slice(0, 10))}</strong>
+                  <span>${score}</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
           <div class="playing-card black">
-            <strong>Round ${cards.round}</strong>
+            <strong>Black Card</strong>
             <span>${escapeHtml(cards.prompt)}</span>
-            <small>${cards.phase === "select" ? "Pick one card." : "Judge the table."}</small>
+            <small>${cards.phase === "select" ? "Choose the answer that bends the room." : "Reveal, read aloud, and crown the worst idea."}</small>
           </div>
           <div class="hand-grid">
             ${cards.hand.map((answer, index) => `
@@ -821,6 +847,7 @@ await ensureThree();
           <section class="band">
             <div class="band-head"><h3>Table</h3><span class="pill">${state.players.length || 1} live</span></div>
             <div class="card-body">
+              <div class="dialogue">Judge notes: reward specificity, timing, and bad confidence. Bots submit immediately so solo play still moves.</div>
               <div class="submissions">${submissions || "<div class='empty'>No submissions.</div>"}</div>
               <button class="btn gold" id="nextCardsRound">Next Round</button>
             </div>
@@ -884,6 +911,7 @@ await ensureThree();
     state.cards.submissions = [];
     state.cards.selected = "";
     state.cards.phase = "select";
+    state.cards.tableMood = sample(["feral", "deadpan", "cinematic", "petty"]);
     sendWs({ type: "cards", payload: state.cards, echo: true });
     drawCards();
   }
@@ -919,11 +947,29 @@ await ensureThree();
       intel: 1,
       keys: 0,
       supplies: 3,
+      crew: [
+        { role: "Talker", bonus: "talk" },
+        { role: "Runner", bonus: "rush" },
+        { role: "Lookout", bonus: "sneak" }
+      ],
+      route: createRogueRoute(1),
       done: false,
       won: false,
       log: ["The party enters through the public lobby."],
       event: rogueEvents[0]
     };
+  }
+
+  function createRogueRoute(depth) {
+    return Array.from({ length: 8 }, (_, index) => {
+      const kind = rogueRoomKinds[(depth + index) % rogueRoomKinds.length];
+      return {
+        name: kind[0],
+        threat: kind[1],
+        danger: ((depth + index) % 3) + 1,
+        current: index === Math.min(7, depth % 8)
+      };
+    });
   }
 
   function drawRogue(renderer) {
@@ -945,16 +991,21 @@ await ensureThree();
             <span class="pill">keys ${s.keys}</span>
             <span class="pill">supplies ${s.supplies}</span>
           </div>
+          <div class="row">${s.crew.map((member) => `<span class="pill">${escapeHtml(member.role)}: ${escapeHtml(member.bonus)}</span>`).join("")}</div>
         </div>
+      </section>
+      <section class="band">
+        <div class="band-head"><h3>Floor Plan</h3><span class="pill">procedural</span></div>
+        <div class="card-body"><div class="rogue-board">${renderRogueBoard(s)}</div></div>
       </section>
       <section class="band">
         <div class="band-head"><h3>Actions</h3><span class="pill">${state.players.length || 1} party</span></div>
         <div class="card-body">
           ${s.done ? `<button class="btn primary" id="restartRogue">New Run</button>` : `
-            <button class="btn primary" data-rogue-action="sneak">Sneak</button>
-            <button class="btn gold" data-rogue-action="talk">Talk Past</button>
-            <button class="btn" data-rogue-action="distract">Distract</button>
-            <button class="btn red" data-rogue-action="rush">Rush Elevator</button>
+            <button class="btn primary" data-rogue-action="sneak">Ghost Route</button>
+            <button class="btn gold" data-rogue-action="talk">Social Engineer</button>
+            <button class="btn" data-rogue-action="distract">Stage Distraction</button>
+            <button class="btn red" data-rogue-action="rush">Force Elevator</button>
           `}
         </div>
       </section>
@@ -971,6 +1022,16 @@ await ensureThree();
     document.querySelectorAll("[data-rogue-action]").forEach((button) => {
       button.addEventListener("click", () => rogueAction(button.dataset.rogueAction, renderer));
     });
+  }
+
+  function renderRogueBoard(s) {
+    return s.route.map((room, index) => `
+      <div class="rogue-node ${room.current ? "current" : ""} ${room.danger > 2 ? "danger" : ""}">
+        <strong>${index + 1}. ${escapeHtml(room.name)}</strong>
+        <span class="muted">${escapeHtml(room.threat)}</span>
+        <span class="pill ${room.danger > 2 ? "red" : ""}">risk ${room.danger}</span>
+      </div>
+    `).join("");
   }
 
   function rogueSceneObjects(s) {
@@ -1015,6 +1076,7 @@ await ensureThree();
       s.log.push("The group is blocked, escorted out, and the run ends.");
     } else {
       s.event = rogueEvents[Math.min(s.depth - 1, rogueEvents.length - 1)];
+      s.route = createRogueRoute(s.depth);
     }
     sendWs({ type: "rogue-action", payload: s, echo: true });
     drawRogue(renderer);

@@ -18,6 +18,7 @@ The app has no package dependencies. It uses Node's built-in HTTP stack and a sm
 - `public/engine3d.js`: reusable Three.js/canvas scene renderer used by studio, creator worlds, and the roguelite.
 - `public/nightfall-island.js`: dedicated Three.js horror adventure with terrain, buildings/interiors, NPC quests, stealth, patrol/chase AI, inventory, and escape progression.
 - `public/three-loader.js`: resilient Three.js loader for browser modules.
+- `public/assets/`: hand-authored SVG cover art and the asset manifest used by game cards and the platform UI.
 
 ## Live Deployment
 

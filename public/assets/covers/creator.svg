@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Creator studio cover art">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#10141c"/>
+      <stop offset="0.5" stop-color="#21313a"/>
+      <stop offset="1" stop-color="#39d98a"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="520" fill="url(#bg)"/>
+  <path d="M115 389 450 203l337 186-337 95Z" fill="#111318" opacity="0.55"/>
+  <g stroke="#61dafb" stroke-width="3" opacity="0.5">
+    <path d="M186 387 450 244l266 143M257 413 450 306l194 107M328 437 450 368l124 69"/>
+    <path d="M450 244v239M316 315v129M584 315v129"/>
+  </g>
+  <g>
+    <rect x="300" y="236" width="82" height="82" rx="6" fill="#f2b84b"/>
+    <rect x="405" y="188" width="92" height="130" rx="6" fill="#39d98a"/>
+    <rect x="520" y="256" width="76" height="62" rx="6" fill="#f472b6"/>
+    <circle cx="452" cy="153" r="25" fill="#61dafb"/>
+    <path d="M452 178v71" stroke="#61dafb" stroke-width="15" stroke-linecap="round"/>
+  </g>
+  <g fill="#f4f1e8" opacity="0.86">
+    <rect x="128" y="92" width="150" height="22" rx="11"/>
+    <rect x="128" y="131" width="104" height="16" rx="8" opacity="0.58"/>
+    <rect x="660" y="91" width="112" height="24" rx="12"/>
+    <rect x="701" y="132" width="72" height="16" rx="8" opacity="0.58"/>
+  </g>
+</svg>

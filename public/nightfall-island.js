@@ -202,7 +202,13 @@ export class NightfallIslandGame {
     const THREE = this.THREE;
     const water = new THREE.Mesh(
       new THREE.PlaneGeometry(180, 180),
-      new THREE.MeshPhongMaterial({ color: 0x102f3a, shininess: 70, transparent: true, opacity: 0.88 })
+      new THREE.MeshPhongMaterial({
+        color: 0x102f3a,
+        map: this.makeTexture("#102f3a", "#1d5365", "water"),
+        shininess: 70,
+        transparent: true,
+        opacity: 0.88
+      })
     );
     water.rotation.x = -Math.PI / 2;
     water.position.y = -0.75;
@@ -221,7 +227,7 @@ export class NightfallIslandGame {
     terrain.computeVertexNormals();
     const ground = new THREE.Mesh(
       terrain,
-      new THREE.MeshLambertMaterial({ color: 0x245f43 })
+      new THREE.MeshLambertMaterial({ color: 0x245f43, map: this.makeTexture("#245f43", "#143f2a", "grass") })
     );
     ground.receiveShadow = true;
     this.scene.add(ground);
@@ -289,7 +295,12 @@ export class NightfallIslandGame {
     floor.position.y = 0.02;
     floor.receiveShadow = true;
     group.add(floor);
-    const wallMat = new THREE.MeshLambertMaterial({ color: building.color, transparent: true, opacity: building.interior ? 0.92 : 1 });
+    const wallMat = new THREE.MeshLambertMaterial({
+      color: building.color,
+      map: this.makeTexture(`#${building.color.toString(16).padStart(6, "0")}`, "#111318", building.interior ? "plaster" : "wood"),
+      transparent: true,
+      opacity: building.interior ? 0.92 : 1
+    });
     const height = building.interior ? 1.8 : 3.2;
     const walls = [
       [0, height / 2, -building.d / 2, building.w, height, 0.28],
@@ -384,6 +395,42 @@ export class NightfallIslandGame {
     body.castShadow = true;
     group.add(body, this.makeLabel(label, 0, 2.2, 0));
     return group;
+  }
+
+  makeTexture(base, accent, type) {
+    const THREE = this.THREE;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = 128;
+    canvas.height = 128;
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = type === "water" ? 0.22 : 0.16;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = type === "plaster" ? 2 : 1;
+    for (let i = 0; i < 42; i += 1) {
+      const x = (i * 37) % 128;
+      const y = (i * 53) % 128;
+      if (type === "water") {
+        ctx.beginPath();
+        ctx.moveTo(x - 26, y);
+        ctx.bezierCurveTo(x - 6, y - 9, x + 18, y + 9, x + 42, y);
+        ctx.stroke();
+      } else if (type === "wood") {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo((x + 22) % 128, 128);
+        ctx.stroke();
+      } else {
+        ctx.fillRect(x, y, 2 + (i % 5), 2 + (i % 7));
+      }
+    }
+    ctx.globalAlpha = 1;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(type === "water" ? 9 : 5, type === "water" ? 9 : 5);
+    return texture;
   }
 
   makeLabel(text, x, y, z) {

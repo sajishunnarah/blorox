@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Nightfall Island cover art">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#07100d"/>
+      <stop offset="0.55" stop-color="#143827"/>
+      <stop offset="1" stop-color="#102f3a"/>
+    </linearGradient>
+    <radialGradient id="moon" cx="75%" cy="20%" r="24%">
+      <stop offset="0" stop-color="#e4f0ff" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#e4f0ff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="7"/></filter>
+  </defs>
+  <rect width="900" height="520" fill="url(#sky)"/>
+  <rect width="900" height="520" fill="url(#moon)"/>
+  <ellipse cx="445" cy="420" rx="395" ry="145" fill="#102f3a" opacity="0.8"/>
+  <path d="M91 366C158 241 290 185 430 214c145 31 231 1 352 97 45 36 43 104-2 126-119 59-271 51-423 49-144-2-295-19-266-120Z" fill="#245f43"/>
+  <path d="M208 342h118v88H208z" fill="#d8cfb7" opacity="0.68"/>
+  <path d="M228 361h34v69h-34zM282 361h24v69h-24z" fill="#07100d" opacity="0.58"/>
+  <path d="M568 328h138v74H568z" fill="#8b6f47" opacity="0.82"/>
+  <path d="M594 349h78v17h-78z" fill="#07100d" opacity="0.5"/>
+  <g fill="#143f2a">
+    <path d="M116 379l28-92 30 92z"/><rect x="139" y="375" width="10" height="48" fill="#5b3d27"/>
+    <path d="M365 330l32-105 35 105z"/><rect x="395" y="327" width="11" height="58" fill="#5b3d27"/>
+    <path d="M748 381l35-116 38 116z"/><rect x="780" y="376" width="12" height="59" fill="#5b3d27"/>
+    <path d="M487 391l26-86 28 86z"/><rect x="511" y="386" width="9" height="43" fill="#5b3d27"/>
+  </g>
+  <path d="M454 432c41-42 80-45 127-15" fill="none" stroke="#ff6b6b" stroke-width="7" stroke-linecap="round" opacity="0.65"/>
+  <circle cx="452" cy="434" r="13" fill="#61dafb"/>
+  <circle cx="617" cy="415" r="14" fill="#ff6b6b"/>
+  <path d="M617 415l55-31" stroke="#ff6b6b" stroke-width="9" stroke-linecap="round" opacity="0.25" filter="url(#blur)"/>
+  <path d="M672 236l26 92h-52z" fill="#b67de2"/>
+  <rect x="668" y="173" width="8" height="68" fill="#b67de2"/>
+  <circle cx="672" cy="163" r="13" fill="#f2b84b"/>
+</svg>

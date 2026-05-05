@@ -294,6 +294,8 @@ button {
   overflow: hidden;
   min-height: 132px;
   background: var(--surface-2);
+  background-position: center;
+  background-size: cover;
 }
 
 .thumb::before {
@@ -306,19 +308,19 @@ button {
 }
 
 .thumb.cards {
-  background: linear-gradient(135deg, #171a21, #7b3f8c 48%, #f2b84b);
+  background-image: linear-gradient(135deg, rgb(23 26 33 / 18%), rgb(13 15 19 / 35%)), url("/assets/covers/cards.svg");
 }
 
 .thumb.island {
-  background: linear-gradient(135deg, #162820, #27624d 45%, #0b0f12 86%);
+  background-image: linear-gradient(135deg, rgb(22 40 32 / 10%), rgb(11 15 18 / 42%)), url("/assets/covers/nightfall.svg");
 }
 
 .thumb.xenu {
-  background: linear-gradient(135deg, #20242d, #8b2f4d 54%, #111318);
+  background-image: linear-gradient(135deg, rgb(32 36 45 / 8%), rgb(17 19 24 / 42%)), url("/assets/covers/xenu.svg");
 }
 
 .thumb.creator {
-  background: linear-gradient(135deg, #21313a, #39d98a 46%, #f472b6);
+  background-image: linear-gradient(135deg, rgb(33 49 58 / 8%), rgb(13 15 19 / 32%)), url("/assets/covers/creator.svg");
 }
 
 .thumb span {
@@ -542,6 +544,56 @@ textarea:focus {
   gap: 16px;
 }
 
+.card-arena {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 22%, rgb(242 184 75 / 13%), transparent 34%),
+    linear-gradient(180deg, #15151d, #101319 58%, #18131d);
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.table-felt {
+  min-height: 110px;
+  border: 1px solid #373c49;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 4%) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(255 255 255 / 4%) 1px, transparent 1px),
+    #141820;
+  background-size: 28px 28px;
+  padding: 12px;
+  display: grid;
+  align-content: space-between;
+  gap: 18px;
+}
+
+.table-seats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.seat-chip {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgb(13 15 19 / 72%);
+  color: var(--muted);
+  padding: 7px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.seat-chip.you {
+  border-color: rgb(57 217 138 / 58%);
+  color: var(--text);
+}
+
 .playing-card {
   min-height: 168px;
   border: 1px solid #d9d4c7;
@@ -554,6 +606,11 @@ textarea:focus {
   justify-content: space-between;
   line-height: 1.25;
   cursor: pointer;
+}
+
+.playing-card small {
+  color: inherit;
+  opacity: 0.62;
 }
 
 .playing-card.black {
@@ -575,6 +632,41 @@ textarea:focus {
 .submissions {
   display: grid;
   gap: 10px;
+}
+
+.rogue-board {
+  min-height: 190px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background:
+    linear-gradient(90deg, rgb(97 218 251 / 8%) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(97 218 251 / 8%) 1px, transparent 1px),
+    #11141a;
+  background-size: 32px 32px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rogue-node {
+  min-height: 68px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgb(32 36 45 / 86%);
+  display: grid;
+  align-content: space-between;
+  gap: 6px;
+}
+
+.rogue-node.current {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgb(242 184 75 / 14%);
+}
+
+.rogue-node.danger {
+  border-color: rgb(255 107 107 / 55%);
 }
 
 .meter {

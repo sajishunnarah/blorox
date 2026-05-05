@@ -1,0 +1,9 @@
+{
+  "covers": {
+    "cards": "/assets/covers/cards.svg",
+    "island": "/assets/covers/nightfall.svg",
+    "xenu": "/assets/covers/xenu.svg",
+    "creator": "/assets/covers/creator.svg"
+  },
+  "style": "Hand-authored SVG cover art and procedural Three.js materials for Blorox game surfaces."
+}
