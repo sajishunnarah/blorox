@@ -1431,6 +1431,7 @@
       const scale = Math.min(width, height) / 48;
       const centerX = width / 2;
       const centerY = height / 2;
+      const labels = [];
       for (const object of this.objects) {
         const x = centerX + Number(object.x || 0) * scale;
         const y = centerY + Number(object.z || 0) * scale;
@@ -1443,15 +1444,50 @@
           ctx.fillRect(x - 10, y - 10, 20, 20);
         }
         if (object.name) {
-          ctx.fillStyle = "#f4f1e8";
-          ctx.font = `${12 * (window.devicePixelRatio || 1)}px sans-serif`;
-          ctx.fillText(object.name, x + 10, y - 8);
+          labels.push({ text: object.name, x, y });
         }
       }
+      this.drawCanvasLabels(labels);
       const px = centerX + Number(this.player.x || 0) * scale;
       const py = centerY + Number(this.player.z || 0) * scale;
       ctx.fillStyle = "#39d98a";
       ctx.fillRect(px - 7, py - 7, 14, 14);
+    }
+
+    drawCanvasLabels(labels) {
+      const ratio = window.devicePixelRatio || 1;
+      const fontSize = 12 * ratio;
+      const paddingX = 4 * ratio;
+      const paddingY = 3 * ratio;
+      const placed = [];
+      this.ctx.font = `${fontSize}px sans-serif`;
+      for (const label of labels) {
+        const text = String(label.text);
+        const width = this.ctx.measureText(text).width + paddingX * 2;
+        const height = fontSize + paddingY * 2;
+        const attempts = [
+          [10 * ratio, -10 * ratio],
+          [10 * ratio, 10 * ratio],
+          [-width - 10 * ratio, -10 * ratio],
+          [-width - 10 * ratio, 10 * ratio],
+          [-width / 2, -24 * ratio],
+          [-width / 2, 14 * ratio]
+        ];
+        const box = attempts
+          .map(([dx, dy]) => ({
+            x: Math.max(4 * ratio, Math.min(this.canvas.width - width - 4 * ratio, label.x + dx)),
+            y: Math.max(4 * ratio, Math.min(this.canvas.height - height - 4 * ratio, label.y + dy)),
+            width,
+            height
+          }))
+          .find((candidate) => !placed.some((other) => boxesOverlap(candidate, other)));
+        if (!box) continue;
+        placed.push(box);
+        this.ctx.fillStyle = "rgb(13 15 19 / 76%)";
+        this.ctx.fillRect(box.x, box.y, box.width, box.height);
+        this.ctx.fillStyle = "#f4f1e8";
+        this.ctx.fillText(text, box.x + paddingX, box.y + fontSize + paddingY / 2);
+      }
     }
 
     dispose() {
@@ -1473,6 +1509,10 @@
       trigger: "#f472b6",
       door: "#8b6f47"
     }[kind] || "#5f6f86";
+  }
+
+  function boxesOverlap(a, b) {
+    return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
   }
 
   function labelItem(id) {
